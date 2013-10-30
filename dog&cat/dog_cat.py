@@ -12,7 +12,7 @@ def load_imgs(folder_path='./tmp/', slices):
 		img = imresize(img, (64,64))	
 		img = img.mean(2)
 		img /= 255.0
-		data[i, ...] = img
+		data[i, ...] = img.ravel()
 
 		if f.startswith('cat') :
 			target[i] = 0
