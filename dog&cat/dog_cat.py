@@ -15,14 +15,18 @@ from sklearn.pipeline import Pipeline
 # Display progress logs on stdout
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(message)s')
 
-def load_imgs(folder_path='./tmp/', slices=slice(23,67)):
+def load_imgs(folder_path='./tmp/', slices=(slice(70, 195), slice(78, 172))):
 	filepaths = [os.path.join(folder_path, f) for f in os.listdir(folder_path)]
 	n_imgs = len(filepaths)
 	data = np.zeros((n_imgs, 64*64))
 	target = np.zeros(n_imgs)
 	for i, f in enumerate(filepaths):
 		print f
-		img = np.asarray(imread(f), dtype=np.float32)
+		img = imread(f)
+		if img.shape[0] > 195 and img.shape[1] > 172 :
+			img = img[slices]
+
+		img = np.asarray(img, dtype=np.float32)
 		img = imresize(img, (64,64))	
 		img = img.mean(2)
 		img /= 255.0
@@ -43,7 +47,8 @@ def load_imgs(folder_path='./tmp/', slices=slice(23,67)):
 trainData, trainTarget = load_imgs('./train/')
 testData, testTarget = load_imgs('./test/')
 
-
+# trainData = (trainData - np.min(trainData, 0)) / (np.max(trainData, 0) + 0.0001)
+# testData = (testData - np.min(testData, 0)) / (np.max(testData, 0) + 0.0001)
 # 
 n_components =  100
 pca = RandomizedPCA(n_components=n_components, whiten=True).fit(trainData)
@@ -52,21 +57,22 @@ eigenfaces = pca.components_.reshape((n_components, 64, 64))
 train_pca = pca.transform(trainData)
 test_pca = pca.transform(testData)
 
-train_pca = (train_pca - np.min(train_pca, 0)) / (np.max(train_pca, 0) + 0.0001)
-test_pca = (test_pca - np.min(test_pca, 0)) / (np.max(test_pca, 0) + 0.0001)
+# train_pca = (train_pca - np.min(train_pca, 0)) / (np.max(train_pca, 0) + 0.0001)
+# test_pca = (test_pca - np.min(test_pca, 0)) / (np.max(test_pca, 0) + 0.0001)
 
 logistic = linear_model.LogisticRegression()
-rbm = BernoulliRBM(random_state=0, verbose=True)
+# rbm = BernoulliRBM(random_state=0, verbose=True)
 
-classifier = Pipeline(steps=[('rbm', rbm), ('logistic', logistic)])
+# classifier = Pipeline(steps=[('rbm', rbm), ('logistic', logistic)])
 
-rbm.learning_rate = 0.06
-rbm.n_iter = 50
-rbm.n_components = 100
-logistic.C = 6000.0
+# rbm.learning_rate = 0.06
+# rbm.n_iter = 50
+# rbm.n_components = 100
+# logistic.C = 6000.0
 
 print 'begin training'
 # Training RBM-Logistic Pipeline
+classifier = logistic
 classifier.fit(train_pca, trainTarget)
 
 print 'end'
